@@ -1,0 +1,52 @@
+{
+  "available_models": {
+    "kronos-mini": {
+      "name": "Kronos-mini",
+      "model_id": "NeoQuasar/Kronos-mini",
+      "tokenizer_id": "NeoQuasar/Kronos-Tokenizer-2k",
+      "context_length": 2048,
+      "params": "4.1M",
+      "description": "Lightweight model, fastest prediction",
+      "default_device": "cpu",
+      "download_size_mb": 20
+    },
+    "kronos-small": {
+      "name": "Kronos-small",
+      "model_id": "NeoQuasar/Kronos-small",
+      "tokenizer_id": "NeoQuasar/Kronos-Tokenizer-base",
+      "context_length": 512,
+      "params": "24.7M",
+      "description": "Balanced performance and speed (recommended)",
+      "default_device": "cpu",
+      "download_size_mb": 100
+    },
+    "kronos-base": {
+      "name": "Kronos-base",
+      "model_id": "NeoQuasar/Kronos-base",
+      "tokenizer_id": "NeoQuasar/Kronos-Tokenizer-base",
+      "context_length": 512,
+      "params": "102.3M",
+      "description": "Highest prediction quality",
+      "default_device": "cuda:0",
+      "download_size_mb": 400
+    }
+  },
+  "cache_info": {
+    "enabled": true,
+    "cache_dir": "cache/models",
+    "model_files": {
+      "kronos-mini": {
+        "model_file": "models--NeoQuasar--Kronos-mini",
+        "tokenizer_file": "models--NeoQuasar--Kronos-Tokenizer-2k"
+      },
+      "kronos-small": {
+        "model_file": "models--NeoQuasar--Kronos-small",
+        "tokenizer_file": "models--NeoQuasar--Kronos-Tokenizer-base"
+      },
+      "kronos-base": {
+        "model_file": "models--NeoQuasar--Kronos-base",
+        "tokenizer_file": "models--NeoQuasar--Kronos-Tokenizer-base"
+      }
+    }
+  }
+}

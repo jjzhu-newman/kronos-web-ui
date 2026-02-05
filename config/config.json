@@ -1,0 +1,56 @@
+{
+  "app": {
+    "name": "Kronos Web UI",
+    "version": "2.0.0",
+    "description": "AI Financial Prediction Platform",
+    "host": "0.0.0.0",
+    "port": 7070,
+    "debug": false,
+    "auto_open_browser": true
+  },
+  "paths": {
+    "cache_dir": "cache/models",
+    "log_dir": "logs",
+    "export_dir": "static/exports"
+  },
+  "data_sources": {
+    "a_stocks": {
+      "primary": "akshare",
+      "fallback_1": "baostock",
+      "fallback_2": "tushare",
+      "auto_fallback": true,
+      "max_retries": 3
+    },
+    "crypto": {
+      "primary": "binance",
+      "fallback": "binance_futures"
+    },
+    "global_stocks": {
+      "primary": "yahoo",
+      "fallback": "local"
+    }
+  },
+  "models": {
+    "cache_enabled": true,
+    "cache_dir": "cache/models",
+    "auto_download": true,
+    "default_model": "kronos-small",
+    "timeout": 300
+  },
+  "prediction": {
+    "default_lookback": 400,
+    "default_pred_len": 120,
+    "default_temperature": 1.0,
+    "default_top_p": 0.9,
+    "default_sample_count": 1,
+    "max_lookback": 2000,
+    "max_pred_len": 500
+  },
+  "logging": {
+    "level": "INFO",
+    "console": true,
+    "file": true,
+    "max_bytes": 10485760,
+    "backup_count": 5
+  }
+}

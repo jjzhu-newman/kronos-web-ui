@@ -1,0 +1,29 @@
+# Kronos UI - Python依赖列表
+
+# Core ML
+torch>=2.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+einops==0.8.1
+safetensors>=0.4.0
+huggingface_hub>=0.23.0
+
+# Web Framework
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# Data Sources
+requests>=2.31.0
+yfinance>=0.2.0
+baostock>=0.8.8
+akshare>=1.12.0
+
+# Optional: Tushare (需要token)
+# tushare>=1.4.0
+
+# Utilities
+tqdm>=4.67.0
+matplotlib>=3.7.0
+
+# Optional: PyInstaller (打包用)
+# pyinstaller>=6.0.0

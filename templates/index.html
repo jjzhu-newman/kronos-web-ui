@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kronos UI - AI 金融预测</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', 'Microsoft YaHei', sans-serif;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .glow-button {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .glow-button:hover {
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(59, 130, 246, 0.2);
+            border-top-color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .status-cached {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-not-cached {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        select, input {
+            background-color: rgba(15, 23, 42, 0.8) !important;
+        }
+
+        .cache-size {
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .data-source-badge {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <!-- Header -->
+    <header class="glass-card border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-xl">
+                        K
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">Kronos UI</h1>
+                        <p class="text-xs text-slate-400">AI 金融预测平台 v2.0</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="model-status" class="flex items-center space-x-2 text-sm">
+                        <span class="pulse-dot w-2 h-2 rounded-full bg-yellow-500"></span>
+                        <span class="text-slate-400">检查中...</span>
+                    </div>
+                    <button onclick="showSettings()" class="p-2 rounded-lg hover:bg-slate-700/50 transition-colors" title="设置">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="showCacheModal()" class="p-2 rounded-lg hover:bg-slate-700/50 transition-colors" title="缓存管理">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Data Source Info Banner -->
+        <div class="glass-card rounded-xl p-4 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-sm text-slate-300">A股数据源自动降级: <span class="text-blue-400">Akshare</span> → <span class="text-purple-400">Baostock</span> → <span class="text-green-400">Tushare</span></span>
+                </div>
+                <span class="data-source-badge">自动降级</span>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Quick Predict Card -->
+            <div class="lg:col-span-3 glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold">快速预测</h2>
+                    <span class="text-xs text-slate-400 bg-slate-800/50 px-3 py-1 rounded-full">一键预测</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Data Source -->
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-2">数据源</label>
+                        <select id="data-source" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="binance">Binance (加密货币)</option>
+                            <option value="yahoo">Yahoo Finance (全球股票)</option>
+                            <option value="akshare" selected>Akshare (A股 - 主数据源)</option>
+                            <option value="baostock">Baostock (A股 - 备用)</option>
+                            <option value="tushare">Tushare (A股 - 备用)</option>
+                        </select>
+                    </div>
+
+                    <!-- Symbol -->
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-2">交易代码</label>
+                        <input type="text" id="symbol-input" value="601212" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="如: 601212, BTCUSDT">
+                    </div>
+
+                    <!-- Interval -->
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-2">时间周期</label>
+                        <select id="interval" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1m">1分钟</option>
+                            <option value="5m">5分钟</option>
+                            <option value="15m">15分钟</option>
+                            <option value="30m">30分钟</option>
+                            <option value="1h">1小时</option>
+                            <option value="1d" selected>日线</option>
+                            <option value="1w">周线</option>
+                        </select>
+                    </div>
+
+                    <!-- Predict Button -->
+                    <div class="flex items-end">
+                        <button id="predict-btn" onclick="quickPredict()" class="glow-button w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-all flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            <span>预测</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Info Card -->
+            <div class="glass-card rounded-2xl p-6">
+                <h2 class="text-lg font-semibold mb-4">模型</h2>
+                <div id="model-info" class="space-y-3">
+                    <div class="text-center py-8">
+                        <p class="text-slate-400 text-sm">未加载模型</p>
+                        <button onclick="showSettings()" class="mt-3 text-blue-400 text-sm hover:text-blue-300">加载模型</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div id="stats-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 hidden">
+            <div class="glass-card rounded-xl p-4">
+                <p class="text-xs text-slate-400 mb-1">最新价格</p>
+                <p id="stat-last-price" class="text-xl font-bold">--</p>
+            </div>
+            <div class="glass-card rounded-xl p-4">
+                <p class="text-xs text-slate-400 mb-1">预测价格</p>
+                <p id="stat-pred-price" class="text-xl font-bold">--</p>
+            </div>
+            <div class="glass-card rounded-xl p-4">
+                <p class="text-xs text-slate-400 mb-1">涨跌幅</p>
+                <p id="stat-change" class="text-xl font-bold">--</p>
+            </div>
+            <div class="glass-card rounded-xl p-4">
+                <p class="text-xs text-slate-400 mb-1">方向</p>
+                <p id="stat-direction" class="text-xl font-bold">--</p>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="glass-card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold">预测图表</h2>
+                <div class="flex items-center space-x-2 text-sm">
+                    <span class="flex items-center space-x-1">
+                        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                        <span class="text-slate-400">历史数据</span>
+                    </span>
+                    <span class="flex items-center space-x-1">
+                        <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                        <span class="text-slate-400">预测数据</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div id="chart-container" class="bg-slate-900/50 rounded-xl" style="height: 450px;">
+                <div class="flex items-center justify-center h-full text-slate-500">
+                    <div class="text-center">
+                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                        <p>加载模型并点击预测按钮查看结果</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Buttons -->
+            <div id="export-buttons" class="mt-4 flex items-center space-x-3 hidden">
+                <button onclick="exportData('csv')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">
+                    导出 CSV
+                </button>
+                <button onclick="exportData('json')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">
+                    导出 JSON
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="glass-card rounded-2xl p-6 max-w-lg w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">模型设置</h2>
+                <button onclick="hideSettings()" class="p-2 hover:bg-slate-700 rounded-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Model Selection -->
+                <div>
+                    <label class="block text-sm text-slate-400 mb-2">选择模型</label>
+                    <select id="model-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5">
+                        <!-- Models will be loaded dynamically -->
+                    </select>
+                    <div id="cache-status" class="mt-2 text-xs"></div>
+                </div>
+
+                <!-- Device -->
+                <div>
+                    <label class="block text-sm text-slate-400 mb-2">计算设备</label>
+                    <select id="device-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5">
+                        <option value="cpu">CPU</option>
+                        <option value="cuda:0">CUDA (NVIDIA GPU)</option>
+                        <option value="mps">MPS (Apple Silicon)</option>
+                    </select>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div class="pt-4 border-t border-slate-700">
+                    <p class="text-sm font-semibold mb-3">高级设置</p>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-2">Lookback</label>
+                            <input type="number" id="lookback-input" value="400" min="50" max="2000" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-2">预测长度</label>
+                            <input type="number" id="predlen-input" value="120" min="10" max="500" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-2">Temperature</label>
+                            <input type="number" id="temp-input" value="1.0" min="0.1" max="2.0" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-2">Top-P</label>
+                            <input type="number" id="topp-input" value="0.9" min="0.1" max="1.0" step="0.05" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex space-x-3">
+                <button onclick="loadModel()" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-semibold py-2.5 rounded-lg">
+                    加载模型
+                </button>
+                <button onclick="hideSettings()" class="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cache Modal -->
+    <div id="cache-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="glass-card rounded-2xl p-6 max-w-2xl w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">模型缓存管理</h2>
+                <button onclick="hideCacheModal()" class="p-2 hover:bg-slate-700 rounded-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="cache-info" class="space-y-4">
+                <!-- Cache info will be loaded dynamically -->
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="clearAllCache()" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-lg">
+                    清除所有缓存
+                </button>
+                <button onclick="hideCacheModal()" class="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="glass-card rounded-2xl p-8 text-center">
+            <div class="loading-spinner w-16 h-16 rounded-full mx-auto mb-4"></div>
+            <p id="loading-text" class="text-lg font-semibold">加载中...</p>
+            <p class="text-sm text-slate-400 mt-2">请稍候</p>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let chart = null;
+        let candleSeries = null;
+        let predictionSeries = null;
+        let currentChartData = null;
+        let currentMetadata = null;
+        let modelsCacheInfo = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkStatus();
+            initChart();
+        });
+
+        // Check system status
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                updateStatusDisplay(data);
+                loadModelsList();
+            } catch (e) {
+                console.error('Status check failed:', e);
+            }
+        }
+
+        function updateStatusDisplay(data) {
+            const statusEl = document.getElementById('model-status');
+            const modelInfoEl = document.getElementById('model-info');
+
+            if (data.model_loaded) {
+                statusEl.innerHTML = `
+                    <span class="pulse-dot w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="text-green-400">${data.model_info.name}</span>
+                `;
+
+                modelInfoEl.innerHTML = `
+                    <div class="text-center py-2">
+                        <div class="text-2xl font-bold text-green-400">就绪</div>
+                        <div class="text-sm text-slate-400">${data.model_info.name}</div>
+                        <div class="text-xs text-slate-500">${data.model_info.params}</div>
+                    </div>
+                `;
+            } else {
+                statusEl.innerHTML = `
+                    <span class="pulse-dot w-2 h-2 rounded-full bg-yellow-500"></span>
+                    <span class="text-yellow-400">未加载模型</span>
+                `;
+            }
+        }
+
+        // Load models list
+        async function loadModelsList() {
+            try {
+                const res = await fetch('/api/models');
+                const data = await res.json();
+
+                const selectEl = document.getElementById('model-select');
+                selectEl.innerHTML = '';
+
+                data.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.key;
+                    option.textContent = `${model.name} (${model.params})`;
+                    selectEl.appendChild(option);
+
+                    // Store detailed cache info
+                    modelsCacheInfo[model.key] = {
+                        cached: model.cached,
+                        model_cached: model.model_cached,
+                        tokenizer_cached: model.tokenizer_cached
+                    };
+                });
+
+                // Update cache status for selected model
+                selectEl.addEventListener('change', updateCacheStatus);
+                updateCacheStatus();
+
+                // Update GPU option based on CUDA availability
+                updateDeviceOptions(data.cuda_available);
+
+            } catch (e) {
+                console.error('Failed to load models:', e);
+            }
+        }
+
+        function updateCacheStatus() {
+            const modelKey = document.getElementById('model-select').value;
+            const cacheInfo = modelsCacheInfo[modelKey];
+            const statusEl = document.getElementById('cache-status');
+
+            if (!cacheInfo) {
+                statusEl.innerHTML = '<span class="status-badge status-not-cached">未知</span>';
+                return;
+            }
+
+            if (cacheInfo.cached) {
+                statusEl.innerHTML = '<span class="status-badge status-cached">✓ 已缓存</span>';
+            } else {
+                let status = '未缓存';
+                if (cacheInfo.model_cached && !cacheInfo.tokenizer_cached) {
+                    status = '部分缓存 (仅模型)';
+                } else if (!cacheInfo.model_cached && cacheInfo.tokenizer_cached) {
+                    status = '部分缓存 (仅tokenizer)';
+                }
+                statusEl.innerHTML = `<span class="status-badge status-not-cached">${status} (需下载)</span>`;
+            }
+        }
+
+        function updateDeviceOptions(cudaAvailable) {
+            const deviceSelect = document.getElementById('device-select');
+            const cudaOption = deviceSelect.querySelector('option[value="cuda:0"]');
+            const mpsOption = deviceSelect.querySelector('option[value="mps"]');
+
+            // 禁用 MPS 选项（Windows 不支持）
+            if (mpsOption) {
+                mpsOption.disabled = true;
+                mpsOption.text = 'MPS (仅 macOS)';
+            }
+
+            // CUDA 选项始终可用（让用户自己尝试）
+            if (cudaOption) {
+                if (cudaAvailable) {
+                    cudaOption.text = 'CUDA (NVIDIA GPU)';
+                } else {
+                    cudaOption.text = 'CUDA (需要CUDA版PyTorch)';
+                }
+                // 不禁用，让用户可以尝试
+            }
+        }
+
+        // Initialize chart
+        function initChart() {
+            const container = document.getElementById('chart-container');
+            container.innerHTML = '';
+
+            chart = LightweightCharts.createChart(container, {
+                layout: {
+                    background: { type: 'solid', color: 'transparent' },
+                    textColor: '#94a3b8',
+                },
+                grid: {
+                    vertLines: { color: 'rgba(148, 163, 184, 0.1)' },
+                    horzLines: { color: 'rgba(148, 163, 184, 0.1)' },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                rightPriceScale: {
+                    borderColor: 'rgba(148, 163, 184, 0.2)',
+                },
+                timeScale: {
+                    borderColor: 'rgba(148, 163, 184, 0.2)',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
+            });
+
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#26a69a',
+                downColor: '#ef5350',
+                borderVisible: false,
+                wickUpColor: '#26a69a',
+                wickDownColor: '#ef5350',
+            });
+
+            predictionSeries = chart.addCandlestickSeries({
+                upColor: '#4ade80',
+                downColor: '#f87171',
+                borderVisible: false,
+                wickUpColor: '#4ade80',
+                wickDownColor: '#f87171',
+            });
+
+            chart.timeScale().fitContent();
+        }
+
+        // Load model
+        async function loadModel() {
+            const modelKey = document.getElementById('model-select').value;
+            const device = document.getElementById('device-select').value;
+
+            showLoading('正在加载模型...');
+
+            try {
+                const res = await fetch('/api/load-model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_key: modelKey, device })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    hideSettings();
+                    checkStatus();
+                } else {
+                    alert('模型加载失败: ' + data.error);
+                }
+            } catch (e) {
+                alert('错误: ' + e.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Quick predict
+        async function quickPredict() {
+            const source = document.getElementById('data-source').value;
+            const symbol = document.getElementById('symbol-input').value.trim();
+            const interval = document.getElementById('interval').value;
+
+            if (!symbol) {
+                alert('请输入交易代码');
+                return;
+            }
+
+            const lookback = parseInt(document.getElementById('lookback-input')?.value || 400);
+            const predLen = parseInt(document.getElementById('predlen-input')?.value || 120);
+            const temperature = parseFloat(document.getElementById('temp-input')?.value || 1.0);
+            const topP = parseFloat(document.getElementById('topp-input')?.value || 0.9);
+
+            showLoading('正在获取数据并预测...');
+
+            try {
+                const res = await fetch('/api/quick-predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        source,
+                        symbol,
+                        interval,
+                        lookback,
+                        pred_len: predLen,
+                        temperature,
+                        top_p: topP,
+                        sample_count: 1
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    currentChartData = data.chart_data;
+                    currentMetadata = data.metadata;
+                    updateChart(data.chart_data);
+                    updateStats(data.prediction_stats);
+                    document.getElementById('export-buttons').classList.remove('hidden');
+                } else {
+                    alert('预测失败: ' + data.error);
+                }
+            } catch (e) {
+                alert('错误: ' + e.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function updateChart(chartData) {
+            const historicalData = chartData.historical.map(d => ({
+                time: new Date(d.timestamp).getTime() / 1000,
+                open: d.open,
+                high: d.high,
+                low: d.low,
+                close: d.close
+            }));
+
+            const predictionData = chartData.prediction.map(d => ({
+                time: new Date(d.timestamp).getTime() / 1000,
+                open: d.open,
+                high: d.high,
+                low: d.low,
+                close: d.close
+            }));
+
+            candleSeries.setData(historicalData);
+            predictionSeries.setData(predictionData);
+            chart.timeScale().fitContent();
+        }
+
+        function updateStats(stats) {
+            document.getElementById('stats-container').classList.remove('hidden');
+
+            document.getElementById('stat-last-price').textContent = stats.last_price.toFixed(2);
+            document.getElementById('stat-pred-price').textContent = stats.pred_end.toFixed(2);
+
+            const changeEl = document.getElementById('stat-change');
+            const dirEl = document.getElementById('stat-direction');
+
+            changeEl.textContent = (stats.change_percent >= 0 ? '+' : '') + stats.change_percent.toFixed(2) + '%';
+            changeEl.className = 'text-xl font-bold ' + (stats.change_percent >= 0 ? 'text-green-400' : 'text-red-400');
+
+            dirEl.textContent = stats.direction === 'up' ? '上涨' : '下跌';
+            dirEl.className = 'text-xl font-bold ' + (stats.direction === 'up' ? 'text-green-400' : 'text-red-400');
+        }
+
+        // Export data
+        async function exportData(format) {
+            if (!currentChartData || !currentMetadata) {
+                alert('没有数据可导出');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/export-prediction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chart_data: currentChartData,
+                        metadata: currentMetadata,
+                        format
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    window.location.href = data.download_url;
+                } else {
+                    alert('导出失败: ' + data.error);
+                }
+            } catch (e) {
+                alert('错误: ' + e.message);
+            }
+        }
+
+        // Cache management
+        async function showCacheModal() {
+            document.getElementById('cache-modal').classList.remove('hidden');
+            loadCacheInfo();
+        }
+
+        function hideCacheModal() {
+            document.getElementById('cache-modal').classList.add('hidden');
+        }
+
+        async function loadCacheInfo() {
+            try {
+                const res = await fetch('/api/cache-info');
+                const data = await res.json();
+
+                let html = `
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-800 rounded-lg p-4">
+                            <p class="text-xs text-slate-400">总模型数</p>
+                            <p class="text-2xl font-bold">${data.total_models}</p>
+                        </div>
+                        <div class="bg-slate-800 rounded-lg p-4">
+                            <p class="text-xs text-slate-400">总缓存大小</p>
+                            <p class="text-2xl font-bold">${data.total_size_mb} MB</p>
+                        </div>
+                    </div>
+                `;
+
+                if (data.total_models > 0) {
+                    html += '<div class="space-y-2">';
+                    for (const [modelId, info] of Object.entries(data.models)) {
+                        html += `
+                            <div class="bg-slate-800 rounded-lg p-3 flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium">${modelId}</p>
+                                    <p class="text-xs text-slate-400">${info.size_mb} MB</p>
+                                </div>
+                                <button onclick="clearModelCache('${modelId}')" class="text-red-400 hover:text-red-300 text-sm">清除</button>
+                            </div>
+                        `;
+                    }
+                    html += '</div>';
+                } else {
+                    html += '<p class="text-slate-400 text-center py-4">暂无缓存模型</p>';
+                }
+
+                document.getElementById('cache-info').innerHTML = html;
+
+            } catch (e) {
+                console.error('Failed to load cache info:', e);
+            }
+        }
+
+        async function clearModelCache(modelId) {
+            if (!confirm(`确定要清除 ${modelId} 的缓存吗?`)) return;
+
+            try {
+                const res = await fetch('/api/cache/clear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_id: modelId })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    loadCacheInfo();
+                    loadModelsList();
+                } else {
+                    alert('清除失败: ' + data.error);
+                }
+            } catch (e) {
+                alert('错误: ' + e.message);
+            }
+        }
+
+        async function clearAllCache() {
+            if (!confirm('确定要清除所有模型缓存吗?')) return;
+
+            try {
+                const res = await fetch('/api/cache/clear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    loadCacheInfo();
+                    loadModelsList();
+                } else {
+                    alert('清除失败: ' + data.error);
+                }
+            } catch (e) {
+                alert('错误: ' + e.message);
+            }
+        }
+
+        // Settings modal
+        function showSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function hideSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        // Loading overlay
+        function showLoading(text = '加载中...') {
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
